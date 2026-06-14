@@ -5,9 +5,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
-class RateLimiter(private val maxRequests: Int = 30, private val perTime: Duration = Duration.seconds(60)) {
+class RateLimiter(private val maxRequests: Int = 30, private val perTime: Duration = 60.seconds) {
     private val mutex = Mutex()
     private var requests = mutableListOf<Long>()
     private val _remaining = MutableStateFlow(maxRequests)
@@ -25,3 +26,4 @@ class RateLimiter(private val maxRequests: Int = 30, private val perTime: Durati
         }
     }
 }
+
