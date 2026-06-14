@@ -7,16 +7,19 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Environment
 import android.os.StatFs
 import android.provider.Settings
+import android.telephony.TelephonyManager
 import java.io.File
 
 object DeviceUtils {
 
-    fun getBatteryStatus(context: Context): String {
+    fun getBatteryInfo(context: Context): String {
         val ifilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
         val batteryStatus = context.registerReceiver(null, ifilter)
         val level = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
@@ -25,7 +28,7 @@ object DeviceUtils {
         return "$pct%"
     }
 
-    fun getRamUsage(context: Context): String {
+    fun getRamInfo(context: Context): String {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memoryInfo = ActivityManager.MemoryInfo()
         activityManager.getMemoryInfo(memoryInfo)
@@ -50,7 +53,7 @@ object DeviceUtils {
         return "${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE}, API ${Build.VERSION.SDK_INT})"
     }
 
-    fun getCpuCores(): Int {
+    fun getCpuCoreCount(): Int {
         return Runtime.getRuntime().availableProcessors()
     }
 
@@ -63,7 +66,7 @@ object DeviceUtils {
         }
     }
 
-    fun getInstalledAppsCount(context: Context): Int {
+    fun listInstalledApps(context: Context): Int {
         return try {
             val pm = context.packageManager
             val apps = pm.getInstalledPackages(PackageManager.GET_META_DATA)
@@ -73,14 +76,14 @@ object DeviceUtils {
         }
     }
 
-    fun getSensorsList(context: Context): List<String> {
+    fun getAvailableSensors(context: Context): List<String> {
         val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val sensorList = sensorManager.getSensorList(Sensor.TYPE_ALL)
         return sensorList.map { it.name }
     }
 
-    // Modernizált felbontás lekérdezés, ami javítja a régi API miatti sárga logokat
-    fun getDisplayResolution(context: Context): String {
+    // JAVÍTVA: Modernizált felbontás lekérdezés az elavult 'defaultDisplay' API miatti sárga logok ellen
+    fun getDisplayInfo(context: Context): String {
         val metrics = context.resources.displayMetrics
         return "${metrics.widthPixels}x${metrics.heightPixels} Px"
     }
@@ -95,19 +98,33 @@ object DeviceUtils {
 
     fun isRooted(): Boolean {
         val paths = arrayOf(
-            "/system/app/Superuser.apk",
-            "/sbin/su",
-            "/system/bin/su",
-            "/system/xbin/su",
-            "/data/local/xbin/su",
-            "/data/local/bin/su",
-            "/system/sd/xbin/su",
-            "/system/bin/failsafe/su",
-            "/data/local/su"
+            "/system/app/Superuser.apk", "/sbin/su", "/system/bin/su",
+            "/system/xbin/su", "/data/local/xbin/su", "/data/local/bin/su",
+            "/system/sd/xbin/su", "/system/bin/failsafe/su", "/data/local/su"
         )
         for (path in paths) {
             if (File(path).exists()) return true
         }
         return false
+    }
+
+    fun getMobileNetworkType(context: Context): String {
+        return try {
+            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            telephonyManager.networkOperatorName.ifEmpty { "Ismeretlen" }
+        } catch (e: Exception) {
+            "Nincs engedély"
+        }
+    }
+
+    fun getNetworkState(context: Context): String {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetwork = cm.activeNetwork ?: return "Nincs kapcsolat"
+        val caps = cm.getNetworkCapabilities(activeNetwork) ?: return "Nincs kapcsolat"
+        return when {
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WiFi"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Mobil adat"
+            else -> "Egyéb hálózat"
+        }
     }
 }
