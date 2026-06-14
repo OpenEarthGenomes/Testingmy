@@ -1,5 +1,6 @@
 package com.example.allinonetester.presentation.theme
 
+import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -41,7 +42,10 @@ fun AllInOneTesterTheme(
     
     val view = LocalView.current
     if (!view.isInEditMode) {
-        WindowCompat.getInsetsController(view.window!!, view).isAppearanceLightStatusBars = !darkTheme
+        val window = (view.context as? Activity)?.window
+        if (window != null) {
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
     }
     
     MaterialTheme(
