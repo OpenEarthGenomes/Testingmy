@@ -1,6 +1,6 @@
 # All-In-One Tester APK
 
-Egy professzionális Android diagnosztikai alkalmazás Samsung A35 (One UI 8, Android 16) optimalizációval.
+Egy professzionális Android diagnosztikai alkalmazás Samsung A35 (One UI 8.5, Android 16) optimalizációval.
 
 ## 🛠️ Funkciók (21+ teszt)
 
@@ -11,7 +11,7 @@ Egy professzionális Android diagnosztikai alkalmazás Samsung A35 (One UI 8, An
 - ⚡ Sebességteszt
 - 📡 Ping
 - 🔓 Port scanner
-- 📁 Mappa méretezés
+- 📁 Mappa méretezés (Teljes rekurzív méretvizsgálat, Android 11+ MANAGE_EXTERNAL_STORAGE támogatással)
 - 🔋 Akku állapot
 - 📶 Hálózati állapot
 - 💾 RAM használat
@@ -26,13 +26,26 @@ Egy professzionális Android diagnosztikai alkalmazás Samsung A35 (One UI 8, An
 - 🔒 Biztonsági patch
 - ⚠️ Root ellenőrzés
 
-## 📦 Telepítés
+📁 Projektstruktúra (Clean Architecture)
 
-1. Töltsd le az APK-t a GitHub Actions "Artifacts" részéből
-2. Engedélyezd az "Ismeretlen forrásból" telepítést
-3. Telepítsd a telefonodra
+· config/ - Konfigurációk
+· domain/usercases/ - Üzleti logika (21 use case)
+· presentation/ui/ - UI komponensek (Jetpack Compose)
+· utils/ - Segédfüggvények
+· data/ - Adatmodellek
 
-## 🚀 Buildelés
+🔧 Technológia
 
-```bash
-./gradlew assembleDebug
+· Kotlin 2.0.0 (Legújabb Compose Compilerrel)
+· Android Gradle Plugin 8.5.0
+· Version Catalogs (libs.versions.toml)
+· Jetpack Compose (UI)
+· Coroutines (async)
+· OkHttp (hálózat)
+· Dagger Hilt (DI)
+
+📱 Kompatibilitás
+
+· Minimum: Android 8.0 (API 26)
+· Target: Android 16 (API 36)
+· Optimalizálva: Samsung Galaxy A35 (One UI 8.5)
