@@ -1,157 +1,104 @@
 package com.example.allinonetester.presentation.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.allinonetester.presentation.ui.components.TestButton
 import com.example.allinonetester.presentation.ui.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(
-    viewModel: MainViewModel,
-    onSelectSdCard: () -> Unit
-) {
-    val uiState by viewModel.uiState.collectAsState()
-    val scrollState = rememberScrollState()
+fun MainScreen(viewModel: MainViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
-    var internalPathInput by remember { mutableStateOf("/storage/emulated/0/Download/teszt.txt") }
-    var targetCopyPathInput by remember { mutableStateOf("/storage/emulated/0/Download/teszt_masolat.txt") }
-    var sdCardRelativePath by remember { mutableStateOf("teszt_mappa/mentes.txt") }
-
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("All-In-One Immersive Tester") },
+                title = { Text("All-In-One Tester 🛠️") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                ),
+                actions = {
+                    IconButton(onClick = { viewModel.saveResults() }) {
+                        Icon(Icons.Default.Save, contentDescription = "Mentés")
+                    }
+                    IconButton(onClick = { viewModel.clearResults() }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Törlés")
+                    }
+                }
             )
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { viewModel.runAllTests() },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Text("Összes teszt")
+            }
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                items(uiState.testButtons) { button ->
+                    TestButton(
+                        title = button.title,
+                        onClick = { viewModel.runTest(button.id) },
+                        isLoading = uiState.loadingTestId == button.id
+                    )
+                }
+            }
+            
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = "Rendszerállapot:", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = uiState, style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(text = "Memória Kezelés", style = MaterialTheme.typography.titleMedium)
-            Button(
-                onClick = { viewModel.runRamCleanup() },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Háttérfolyamatok lelövése (RAM Ürítés)")
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            Text(text = "Belső Tárhely Műveletek", style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(
-                value = internalPathInput,
-                onValueChange = { internalPathInput = it },
-                label = { Text("Fájl vagy mappa útvonala") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            
-            OutlinedTextField(
-                value = targetCopyPathInput,
-                onValueChange = { targetCopyPathInput = it },
-                label = { Text("Másolás célútvonala") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = { viewModel.checkFolderSize(internalPathInput) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Méret mérése")
-                }
-                Button(
-                    onClick = { viewModel.deleteFile(internalPathInput, isExternal = false) },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Törlés")
-                }
-            }
-
-            Button(
-                onClick = { viewModel.copyFile(internalPathInput, targetCopyPathInput, toExternal = false) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Másolás belső tárhelyen")
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            Text(text = "Külső SD Kártya Kezelés (SAF)", style = MaterialTheme.typography.titleMedium)
-            
-            if (viewModel.sdCardUri.value == null) {
-                Button(
-                    onClick = onSelectSdCard,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("SD Kártya Gyökér mappa engedélyezése")
-                }
-            } else {
-                Text(
-                    text = "SD Kártya hozzáférés aktív ✅",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
-            }
-
-            OutlinedTextField(
-                value = sdCardRelativePath,
-                onValueChange = { sdCardRelativePath = it },
-                label = { Text("Relatív útvonal az SD kártyán (pl. mappa/fájl.txt)") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(
-                    onClick = { viewModel.copyFile(internalPathInput, sdCardRelativePath, toExternal = true) },
-                    enabled = viewModel.sdCardUri.value != null,
-                    modifier = Modifier.weight(1f)
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                    reverseLayout = true
                 ) {
-                    Text("Másolás SD-re")
-                }
-                Button(
-                    onClick = { viewModel.deleteFile(sdCardRelativePath, isExternal = true) },
-                    enabled = viewModel.sdCardUri.value != null,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Törlés SD-ről")
+                    items(uiState.results.reversed()) { result ->
+                        Text(
+                            text = result,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                    if (uiState.results.isEmpty()) {
+                        item {
+                            Text(
+                                text = "Nyomj meg egy gombot a teszt indításához...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
         }
