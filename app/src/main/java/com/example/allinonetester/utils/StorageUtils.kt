@@ -1,35 +1,71 @@
 package com.example.allinonetester.utils
 
+import android.content.Context
+import android.os.Environment
+import android.os.StatFs
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 
-object StorageUtils {
+@Singleton
+class StorageUtils @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
-    fun getFolderSize(file: File): Long {
-        if (!file.exists()) return 0
-        if (file.isFile) return file.length()
-        
-        var size: Long = 0
-        try {
-            val files = file.listFiles()
-            if (files != null) {
-                for (child in files) {
-                    size += getFolderSize(child)
-                }
-            }
-        } catch (e: SecurityException) {
-            // Hozzáférés megtagadva egy specifikus mappához, átugorjuk
-        }
-        return size
+    /**
+     * Visszaadja az eszköz belső tárhelyének szabad kapacitását bájtokban.
+     */
+    fun getFreeInternalSpace(): Long {
+        val path = Environment.getDataDirectory()
+        val stat = StatFs(path.path)
+        val blockSize = stat.blockSizeLong
+        val availableBlocks = stat.availableBlocksLong
+        return availableBlocks * blockSize
     }
 
-    fun formatSize(bytes: Long): String {
-        val units = listOf("B", "KB", "MB", "GB", "TB")
-        var size = bytes.toDouble()
-        var unitIndex = 0
-        while (size >= 1024 && unitIndex < units.lastIndex) {
-            size /= 1024
-            unitIndex++
+    /**
+     * Visszaadja az eszköz belső tárhelyének teljes kapacitását bájtokban.
+     */
+    fun getTotalInternalSpace(): Long {
+        val path = Environment.getDataDirectory()
+        val stat = StatFs(path.path)
+        val blockSize = stat.blockSizeLong
+        val totalBlocks = stat.blockCountLong
+        return totalBlocks * blockSize
+    }
+
+    /**
+     * Visszaadja az alkalmazás belső gyorsítótárának (cache) mappáját.
+     */
+    fun getAppCacheDirectory(): File {
+        return context.cacheDir
+    }
+
+    /**
+     * Visszaadja az alkalmazás külső gyorsítótárának mappáját (ha elérhető).
+     */
+    fun getAppExternalCacheDirectory(): File? {
+        return context.externalCacheDir
+    }
+
+    /**
+     * Törli a megadott mappát és annak minden tartalmát rekurzívan.
+     * @return Igaz, ha a törlés sikeres volt, különben hamis.
+     */
+    fun deleteDirectoryContents(directory: File): Boolean {
+        if (!directory.exists() || !directory.isDirectory) return false
+        
+        val files = directory.listFiles() ?: return true
+        var success = true
+        
+        for (file in files) {
+            success = if (file.isDirectory) {
+                success && deleteDirectoryContents(file) && file.delete()
+            } else {
+                success && file.delete()
+            }
         }
-        return "%.2f %s".format(size, units[unitIndex])
+        return success
     }
 }
