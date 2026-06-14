@@ -49,7 +49,7 @@ object NetworkUtils {
         var bytesRead = 0L
         connection.inputStream.use { input ->
             val buffer = ByteArray(8192)
-            var len = 0
+            var len: Int
             while (bytesRead < bytesToDownload && input.read(buffer).also { len = it } != -1) {
                 bytesRead += len
             }
@@ -86,6 +86,3 @@ object NetworkUtils {
         }
     }
 }
-
-
-
