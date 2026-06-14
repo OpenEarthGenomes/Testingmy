@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -29,7 +29,7 @@ fun MainScreen(viewModel: MainViewModel) {
                 ),
                 actions = {
                     IconButton(onClick = { viewModel.saveResults() }) {
-                        Icon(Icons.Default.Save, contentDescription = "Mentés")
+                        Icon(Icons.Default.Done, contentDescription = "Mentés")
                     }
                     IconButton(onClick = { viewModel.clearResults() }) {
                         Icon(Icons.Default.Delete, contentDescription = "Törlés")
@@ -102,4 +102,3 @@ fun MainScreen(viewModel: MainViewModel) {
         }
     }
 }
-
