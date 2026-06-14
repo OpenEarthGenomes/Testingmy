@@ -1,26 +1,36 @@
 package com.example.allinonetester.domain.usercases
 
-import android.content.Context
-import android.os.Build
-import android.os.Environment
-import com.example.allinonetester.utils.StorageUtils
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-class GetFolderSizeUseCase @Inject constructor(private val context: Context) {
-    suspend operator fun invoke(path: String? = null): String {
-        return try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
-                return "Hiba: MANAGE_EXTERNAL_STORAGE engedély hiányzik a teljes méretezéshez. Kérlek engedélyezd a beállításokban!"
-            }
+class GetFolderSizeUseCase @Inject constructor() {
 
-            val dir = path?.let { File(it) } ?: Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            if (!dir.exists()) return "A mappa nem létezik: ${dir.absolutePath}"
-            
-            val size = StorageUtils.getFolderSize(dir)
-            "Mappa: ${dir.absolutePath}\nTeljes méret: ${StorageUtils.formatSize(size)} 📁"
-        } catch (e: Exception) {
-            "Hiba a mappa olvasásakor: ${e.message}"
+    /**
+     * Kiszámítja egy adott mappa teljes méretét bájtokban, a háttérszálon futva.
+     * @param folderPath A célmappa abszolút elérési útja.
+     * @return A mappa mérete bájtokban (Long). Ha nem létezik vagy nem mappa, 0L.
+     */
+    suspend operator fun invoke(folderPath: String): Long = withContext(Dispatchers.IO) {
+        val folder = File(folderPath)
+        if (!folder.exists() || !folder.isDirectory) {
+            return@withContext 0L
         }
+        return@withContext calculateSize(folder)
+    }
+
+    private fun calculateSize(directory: File): Long {
+        var totalLength: Long = 0
+        val files = directory.listFiles() ?: return 0L
+
+        for (file in files) {
+            totalLength += if (file.isFile) {
+                file.length()
+            } else {
+                calculateSize(file) // Rekurzív hívás az almappákhoz
+            }
+        }
+        return totalLength
     }
 }
