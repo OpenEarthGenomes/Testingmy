@@ -1,1 +1,13 @@
-
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.AllInOneTester" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/samsung_blue</item>
+        <item name="android:navigationBarColor">@color/samsung_dark_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+    
+    <style name="Theme.AllInOneTester.Fullscreen" parent="Theme.AllInOneTester">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+</resources>
