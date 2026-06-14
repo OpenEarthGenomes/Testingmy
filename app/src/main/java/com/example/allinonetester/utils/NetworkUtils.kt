@@ -3,95 +3,89 @@ package com.example.allinonetester.utils
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.net.HttpURLConnection
 import java.net.InetAddress
-import java.net.InetSocketAddress
+import java.net.NetworkInterface
 import java.net.Socket
 import java.net.URL
-import kotlin.system.measureTimeMillis
+import java.util.concurrent.TimeUnit
 
 object NetworkUtils {
 
     fun isInternetAvailable(context: Context): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val capabilities = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
-    fun dnsLookup(host: String): String {
-        return try {
-            val addresses = InetAddress.getAllByName(host)
-            // JAVÍTVA: Garantáltan non-null Stringet adunk vissza a típus-illesztési sárga hiba ellen
-            addresses.firstOrNull()?.hostAddress ?: "Nem található IP cím"
-        } catch (e: Exception) {
-            "DNS hiba: ${e.message ?: "Ismeretlen hiba"}"
-        }
+    fun dnsLookup(domain: String): String {
+        return InetAddress.getByName(domain).hostAddress
     }
 
     fun getPublicIp(): String {
-        return try {
-            URL("https://api.ipify.org").readText()
-        } catch (e: Exception) {
-            "Hiba az IP lekérésekor"
-        }
+        return URL("https://api.ipify.org").readText()
     }
 
-    fun getResponseTime(urlString: String): String {
-        return try {
-            val url = URL(urlString)
-            val time = measureTimeMillis {
-                val connection = url.openConnection()
-                connection.connectTimeout = 5000
-                connection.connect()
+    fun getResponseTime(urlString: String): Pair<Int, Long> {
+        val client = OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
+            .build()
+        val request = Request.Builder().url(urlString).build()
+        val start = System.currentTimeMillis()
+        val response = client.newCall(request).execute()
+        val duration = System.currentTimeMillis() - start
+        return Pair(response.code, duration)
+    }
+
+    fun simpleDownloadSpeed(testUrl: String = "https://speed.cloudflare.com/__down?bytes=5000000", bytesToDownload: Long = 5_000_000): Double {
+        val url = URL(testUrl)
+        val connection = url.openConnection() as HttpURLConnection
+        connection.connectTimeout = 5000
+        connection.readTimeout = 10000
+        val start = System.currentTimeMillis()
+        var bytesRead = 0L
+        connection.inputStream.use { input ->
+            val buffer = ByteArray(8192)
+            var len = 0
+            while (bytesRead < bytesToDownload && input.read(buffer).also { len = it } != -1) {
+                bytesRead += len
             }
-            "$time ms"
-        } catch (e: Exception) {
-            "Hiba: ${e.message}"
         }
+        val durationSec = (System.currentTimeMillis() - start) / 1000.0
+        val megabits = (bytesRead * 8) / 1_000_000.0
+        return megabits / durationSec
     }
 
     fun ping(host: String, timeoutMs: Int = 3000): String {
         return try {
-            val address = InetAddress.getByName(host)
-            // JAVÍTVA: A timeoutMs paraméter most már ténylegesen fel van használva
-            val reachable = address.isReachable(timeoutMs)
-            if (reachable) "Ping sikeres ide: $host" else "Időtúllépés ($timeoutMs ms)"
-        } catch (e: Exception) {
-            // JAVÍTVA: Biztosítjuk, hogy az e.message ne lehessen null (CharSequence elvárás miatt)
-            val errorMsg: String = e.message ?: "Ismeretlen hiba"
-            "Ping hiba: $errorMsg"
-        }
-    }
-
-    fun scanPorts(host: String, ports: List<Int>, timeoutMs: Int = 500): List<Int> {
-        val openPorts = mutableListOf<Int>()
-        for (port in ports) {
-            try {
-                val socket = Socket()
-                socket.connect(InetSocketAddress(host, port), timeoutMs)
-                socket.close()
-                openPorts.add(port)
-            } catch (e: Exception) {
-                // A port zárva van vagy időtúllépés történt
-            }
-        }
-        return openPorts
-    }
-
-    fun simpleDownloadSpeed(): String {
-        return try {
-            val startTime = System.currentTimeMillis()
-            val url = URL("https://speed.cloudflare.com/__down?bytes=1048576") // 1MB tesztfájl letöltése
-            val connection = url.openConnection()
-            connection.connectTimeout = 5000
-            connection.readTimeout = 5000
-            connection.inputStream.readBytes()
-            val endTime = System.currentTimeMillis()
-            val timeTaken = (endTime - startTime) / 1000.0 // idő másodpercben
-            val speedMbps = (1.0 * 8) / timeTaken // 1MB = 8 Megabits
-            String.format("%.2f Mbps", speedMbps)
+            val reachable = InetAddress.getByName(host).isReachable(timeoutMs)
+            if (reachable) "Válaszol ✅" else "Nem válaszol ❌"
         } catch (e: Exception) {
             "Hiba: ${e.message}"
         }
     }
+
+    fun scanPorts(host: String, ports: List<Int>, timeoutMs: Int = 500): List<Int> {
+        return ports.filter { port ->
+            try {
+                Socket(host, port).close()
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+
+    fun listNetworkInterfaces(): List<String> {
+        return NetworkInterface.getNetworkInterfaces().toList().map { iface ->
+            val ips = iface.inetAddresses.toList().joinToString(", ") { it.hostAddress }
+            "${iface.displayName} (${iface.name}) : $ips"
+        }
+    }
 }
+
+
+
