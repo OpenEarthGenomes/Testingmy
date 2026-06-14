@@ -1,9 +1,6 @@
 package com.example.allinonetester.utils
 
-import android.app.ActivityManager
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorManager
@@ -11,120 +8,123 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.os.Build
-import android.os.Environment
 import android.os.StatFs
 import android.provider.Settings
 import android.telephony.TelephonyManager
+import android.util.DisplayMetrics
+import android.view.WindowManager
 import java.io.File
 
 object DeviceUtils {
 
     fun getBatteryInfo(context: Context): String {
-        val ifilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        val batteryStatus = context.registerReceiver(null, ifilter)
-        val level = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
-        val scale = batteryStatus?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
-        val pct = if (level >= 0 && scale > 0) (level * 100 / scale.toFloat()).toInt() else 0
-        return "$pct%"
+        val batteryIntent = context.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
+        val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+        val percent = if (level != -1 && scale != -1) (level * 100 / scale) else -1
+        val temp = (batteryIntent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0) / 10.0
+        val status = when (batteryIntent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1)) {
+            BatteryManager.BATTERY_STATUS_CHARGING -> "Töltés ⚡"
+            BatteryManager.BATTERY_STATUS_DISCHARGING -> "Kisütés 🔋"
+            BatteryManager.BATTERY_STATUS_FULL -> "Tele ✅"
+            else -> "Ismeretlen"
+        }
+        return "🔋 Akku: $percent% | 🌡️ Hőfok: ${temp}°C | 📊 Állapot: $status"
     }
 
-    fun getRamInfo(context: Context): String {
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val memoryInfo = ActivityManager.MemoryInfo()
-        activityManager.getMemoryInfo(memoryInfo)
-        val total = memoryInfo.totalMem / (1024 * 1024)
-        val avail = memoryInfo.availMem / (1024 * 1024)
-        val used = total - avail
-        return "Használt: $used MB / Összes: $total MB"
+    fun getNetworkState(context: Context): String {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetwork = cm.activeNetwork
+        val caps = cm.getNetworkCapabilities(activeNetwork)
+        return when {
+            caps == null -> "❌ Nincs aktív hálózat"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "📶 Wi-Fi kapcsolat"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "📱 Mobil adatkapcsolat"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "🔌 Ethernet"
+            else -> "🌐 Egyéb hálózat"
+        }
+    }
+
+    fun getRamInfo(): String {
+        val mi = Runtime.getRuntime()
+        val totalMB = mi.totalMemory() / (1024 * 1024)
+        val freeMB = mi.freeMemory() / (1024 * 1024)
+        val usedMB = totalMB - freeMB
+        return "💾 RAM összes: ${totalMB} MB | Használt: ${usedMB} MB | Szabad: ${freeMB} MB"
     }
 
     fun getStorageInfo(): String {
-        val path = Environment.getDataDirectory()
+        val path = android.os.Environment.getDataDirectory()
         val stat = StatFs(path.path)
         val blockSize = stat.blockSizeLong
-        val availableBlocks = stat.availableBlocksLong
         val totalBlocks = stat.blockCountLong
-        val total = (totalBlocks * blockSize) / (1024 * 1024 * 1024)
-        val avail = (availableBlocks * blockSize) / (1024 * 1024 * 1024)
-        return "Szabad: $avail GB / Összes: $total GB"
+        val availableBlocks = stat.availableBlocksLong
+        val totalMB = (totalBlocks * blockSize) / (1024 * 1024)
+        val freeMB = (availableBlocks * blockSize) / (1024 * 1024)
+        val usedMB = totalMB - freeMB
+        return "💿 Belső tárhely: $totalMB MB | Használt: $usedMB MB | Szabad: $freeMB MB"
     }
 
-    fun getDeviceModel(): String {
-        return "${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE}, API ${Build.VERSION.SDK_INT})"
+    fun getScreenBrightness(context: Context): Int {
+        return try {
+            Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
+        } catch (e: Exception) {
+            -1
+        }
     }
 
     fun getCpuCoreCount(): Int {
         return Runtime.getRuntime().availableProcessors()
     }
 
-    fun getScreenBrightness(context: Context): String {
-        return try {
-            val brightness = Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
-            "$brightness / 255"
-        } catch (e: Exception) {
-            "Nem elérhető"
-        }
+    fun listInstalledApps(context: Context, limit: Int = 20): List<String> {
+        val packages = context.packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
+        return packages.take(limit).map { it.packageName }
     }
 
-    fun listInstalledApps(context: Context): Int {
-        return try {
-            val pm = context.packageManager
-            val apps = pm.getInstalledPackages(PackageManager.GET_META_DATA)
-            apps.size
-        } catch (e: Exception) {
-            0
+    fun getMobileNetworkType(context: Context): String {
+        val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            when (tm.getDataNetworkType()) {
+                TelephonyManager.NETWORK_TYPE_LTE -> "LTE (4G) 🚀"
+                TelephonyManager.NETWORK_TYPE_NR -> "5G 🔥"
+                TelephonyManager.NETWORK_TYPE_HSPAP -> "HSPA+"
+                TelephonyManager.NETWORK_TYPE_EDGE -> "EDGE 🐢"
+                else -> "Egyéb"
+            }
+        } else {
+            "Nem lekérhető (API < 29)"
         }
     }
 
     fun getAvailableSensors(context: Context): List<String> {
-        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        val sensorList = sensorManager.getSensorList(Sensor.TYPE_ALL)
-        return sensorList.map { it.name }
+        val sm = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        return sm.getSensorList(Sensor.TYPE_ALL).map {
+            "${it.name} (${it.vendor})"
+        }
     }
 
-    // JAVÍTVA: Modernizált felbontás lekérdezés az elavult 'defaultDisplay' API miatti sárga logok ellen
     fun getDisplayInfo(context: Context): String {
-        val metrics = context.resources.displayMetrics
-        return "${metrics.widthPixels}x${metrics.heightPixels} Px"
+        val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val dm = DisplayMetrics()
+        wm.defaultDisplay.getMetrics(dm)
+        return "🖥️ Felbontás: ${dm.widthPixels}x${dm.heightPixels} | Sűrűség: ${dm.densityDpi} dpi"
     }
 
     fun getSecurityPatch(): String {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Build.VERSION.SECURITY_PATCH
-        } else {
-            "Nem elérhető"
-        }
+            "🔒 Patch szint: ${Build.VERSION.SECURITY_PATCH}"
+        } else "🔒 Nem támogatott (API < 23)"
     }
 
     fun isRooted(): Boolean {
-        val paths = arrayOf(
+        val paths = listOf(
             "/system/app/Superuser.apk", "/sbin/su", "/system/bin/su",
             "/system/xbin/su", "/data/local/xbin/su", "/data/local/bin/su",
             "/system/sd/xbin/su", "/system/bin/failsafe/su", "/data/local/su"
         )
-        for (path in paths) {
-            if (File(path).exists()) return true
-        }
-        return false
-    }
-
-    fun getMobileNetworkType(context: Context): String {
-        return try {
-            val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-            telephonyManager.networkOperatorName.ifEmpty { "Ismeretlen" }
-        } catch (e: Exception) {
-            "Nincs engedély"
-        }
-    }
-
-    fun getNetworkState(context: Context): String {
-        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val activeNetwork = cm.activeNetwork ?: return "Nincs kapcsolat"
-        val caps = cm.getNetworkCapabilities(activeNetwork) ?: return "Nincs kapcsolat"
-        return when {
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WiFi"
-            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Mobil adat"
-            else -> "Egyéb hálózat"
-        }
+        return paths.any { File(it).exists() } || try {
+            Runtime.getRuntime().exec("which su").inputStream.read() != -1
+        } catch (e: Exception) { false }
     }
 }
