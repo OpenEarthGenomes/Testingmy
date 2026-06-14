@@ -11,7 +11,7 @@ import kotlin.system.measureTimeMillis
 
 object NetworkUtils {
 
-    fun checkInternetConnection(context: Context): Boolean {
+    fun isInternetAvailable(context: Context): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
@@ -21,7 +21,7 @@ object NetworkUtils {
     fun dnsLookup(host: String): String {
         return try {
             val addresses = InetAddress.getAllByName(host)
-            // Javítva: Garantáltan non-null Stringet adunk vissza a típus-illesztési hiba ellen
+            // JAVÍTVA: Garantáltan non-null Stringet adunk vissza a típus-illesztési sárga hiba ellen
             addresses.firstOrNull()?.hostAddress ?: "Nem található IP cím"
         } catch (e: Exception) {
             "DNS hiba: ${e.message ?: "Ismeretlen hiba"}"
@@ -36,7 +36,7 @@ object NetworkUtils {
         }
     }
 
-    fun getWebsiteResponseTime(urlString: String): String {
+    fun getResponseTime(urlString: String): String {
         return try {
             val url = URL(urlString)
             val time = measureTimeMillis {
@@ -53,11 +53,11 @@ object NetworkUtils {
     fun ping(host: String, timeoutMs: Int = 3000): String {
         return try {
             val address = InetAddress.getByName(host)
-            // Javítva: A timeoutMs paraméter most már ténylegesen fel van használva
+            // JAVÍTVA: A timeoutMs paraméter most már ténylegesen fel van használva
             val reachable = address.isReachable(timeoutMs)
             if (reachable) "Ping sikeres ide: $host" else "Időtúllépés ($timeoutMs ms)"
         } catch (e: Exception) {
-            // Javítva: Biztosítjuk, hogy az e.message ne lehessen null (CharSequence elvárás miatt)
+            // JAVÍTVA: Biztosítjuk, hogy az e.message ne lehessen null (CharSequence elvárás miatt)
             val errorMsg: String = e.message ?: "Ismeretlen hiba"
             "Ping hiba: $errorMsg"
         }
@@ -76,5 +76,22 @@ object NetworkUtils {
             }
         }
         return openPorts
+    }
+
+    fun simpleDownloadSpeed(): String {
+        return try {
+            val startTime = System.currentTimeMillis()
+            val url = URL("https://speed.cloudflare.com/__down?bytes=1048576") // 1MB tesztfájl letöltése
+            val connection = url.openConnection()
+            connection.connectTimeout = 5000
+            connection.readTimeout = 5000
+            connection.inputStream.readBytes()
+            val endTime = System.currentTimeMillis()
+            val timeTaken = (endTime - startTime) / 1000.0 // idő másodpercben
+            val speedMbps = (1.0 * 8) / timeTaken // 1MB = 8 Megabits
+            String.format("%.2f Mbps", speedMbps)
+        } catch (e: Exception) {
+            "Hiba: ${e.message}"
+        }
     }
 }
