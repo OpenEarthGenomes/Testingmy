@@ -7,7 +7,19 @@ object StorageUtils {
     fun getFolderSize(file: File): Long {
         if (!file.exists()) return 0
         if (file.isFile) return file.length()
-        return file.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+        
+        var size: Long = 0
+        try {
+            val files = file.listFiles()
+            if (files != null) {
+                for (child in files) {
+                    size += getFolderSize(child)
+                }
+            }
+        } catch (e: SecurityException) {
+            // Hozzáférés megtagadva egy specifikus mappához, átugorjuk
+        }
+        return size
     }
 
     fun formatSize(bytes: Long): String {
