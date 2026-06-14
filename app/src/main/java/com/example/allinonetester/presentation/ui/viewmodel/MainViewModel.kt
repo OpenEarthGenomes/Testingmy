@@ -1,10 +1,10 @@
 package com.example.allinonetester.presentation.ui.viewmodel
 
-import android.content.Context
+import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.allinonetester.domain.usercases.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +23,7 @@ data class MainUiState(
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val context: Context,
+    application: Application,
     private val checkInternetUseCase: CheckInternetUseCase,
     private val dnsLookupUseCase: DnsLookupUseCase,
     private val getPublicIpUseCase: GetPublicIpUseCase,
@@ -45,7 +45,7 @@ class MainViewModel @Inject constructor(
     private val getDisplayInfoUseCase: GetDisplayInfoUseCase,
     private val getSecurityPatchUseCase: GetSecurityPatchUseCase,
     private val isRootedUseCase: IsRootedUseCase
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     var uiState by mutableStateOf(MainUiState())
         private set
@@ -60,7 +60,7 @@ class MainViewModel @Inject constructor(
                 TestButton("speed", "⚡ Sebességteszt"),
                 TestButton("ping", "📡 Ping (1.1.1.1)"),
                 TestButton("port_scan", "🔓 Port scanner (1.1.1.1)"),
-                TestButton("folder_size", "📁 Letöltések mappa mérete"),
+                TestButton("folder_size", "📁 Letöltések mappa teljes mérete"),
                 TestButton("battery", "🔋 Akku állapot"),
                 TestButton("network_state", "📶 Hálózati állapot"),
                 TestButton("ram", "💾 RAM használat"),
@@ -90,17 +90,17 @@ class MainViewModel @Inject constructor(
                 "ping" -> pingUseCase()
                 "port_scan" -> portScanUseCase()
                 "folder_size" -> getFolderSizeUseCase()
-                "battery" -> getBatteryStatusUseCase(context)
-                "network_state" -> getNetworkStateUseCase(context)
+                "battery" -> getBatteryStatusUseCase()
+                "network_state" -> getNetworkStateUseCase()
                 "ram" -> getRamInfoUseCase()
                 "storage" -> getStorageInfoUseCase()
                 "device" -> getDeviceInfoUseCase()
-                "brightness" -> getScreenBrightnessUseCase(context)
+                "brightness" -> getScreenBrightnessUseCase()
                 "cpu" -> getCpuCoreCountUseCase()
-                "apps" -> listInstalledAppsUseCase(context)
-                "mobile_network" -> getMobileNetworkTypeUseCase(context)
-                "sensors" -> listSensorsUseCase(context)
-                "display" -> getDisplayInfoUseCase(context)
+                "apps" -> listInstalledAppsUseCase()
+                "mobile_network" -> getMobileNetworkTypeUseCase()
+                "sensors" -> listSensorsUseCase()
+                "display" -> getDisplayInfoUseCase()
                 "security_patch" -> getSecurityPatchUseCase()
                 "root" -> isRootedUseCase()
                 else -> "Ismeretlen teszt"
@@ -114,7 +114,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             uiState.testButtons.forEach { button ->
                 runTest(button.id)
-                kotlinx.coroutines.delay(500) // Kis szünet a tesztek között
+                kotlinx.coroutines.delay(500)
             }
         }
     }
@@ -122,7 +122,7 @@ class MainViewModel @Inject constructor(
     fun saveResults() {
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val fileName = "tester_results_$timestamp.txt"
-        val file = java.io.File(context.getExternalFilesDir(null), fileName)
+        val file = java.io.File(getApplication<Application>().getExternalFilesDir(null), fileName)
         file.writeText(uiState.results.joinToString("\n\n" + "=".repeat(50) + "\n\n"))
         addResult("💾 Eredmények mentve: ${file.absolutePath}")
     }
@@ -137,3 +137,4 @@ class MainViewModel @Inject constructor(
         )
     }
 }
+
