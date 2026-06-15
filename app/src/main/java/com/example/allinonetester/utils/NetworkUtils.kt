@@ -1,8 +1,11 @@
 package com.example.allinonetester.utils
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.telephony.TelephonyManager
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -18,6 +21,45 @@ object NetworkUtils {
         .connectTimeout(5, TimeUnit.SECONDS)
         .readTimeout(5, TimeUnit.SECONDS)
         .build()
+
+    // Golyóálló hálózattípus lekérdező: Sosem omlik össze!
+    fun getDetailedNetworkType(context: Context): String {
+        return try {
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val network = connectivityManager.activeNetwork ?: return "Nincs kapcsolat"
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return "Ismeretlen hálózat"
+
+            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                return "Wi-Fi"
+            }
+
+            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                // Ellenőrizzük, hogy a felhasználó megadta-e a futásidejű engedélyt a pontos típus (4G/5G) lekéréséhez
+                if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                    val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+                    when (telephonyManager.dataNetworkType) {
+                        TelephonyManager.NETWORK_TYPE_NR -> "Mobiladat (5G)"
+                        TelephonyManager.NETWORK_TYPE_LTE -> "Mobiladat (4G)"
+                        TelephonyManager.NETWORK_TYPE_HSPAP,
+                        TelephonyManager.NETWORK_TYPE_UMTS -> "Mobiladat (3G)"
+                        TelephonyManager.NETWORK_TYPE_EDGE,
+                        TelephonyManager.NETWORK_TYPE_GPRS -> "Mobiladat (2G)"
+                        else -> "Mobiladat (Ismeretlen generáció)"
+                    }
+                } else {
+                    return "Mobiladat (Pontos típushoz engedély kell)"
+                }
+            } else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
+                return "Ethernet"
+            } else {
+                return "Egyéb hálózat"
+            }
+        } catch (e: SecurityException) {
+            "Mobiladat (Biztonsági korlátozás)"
+        } catch (e: Exception) {
+            "Hiba a lekérdezéskor"
+        }
+    }
 
     suspend fun getResponseTime(url: String): String = withContext(Dispatchers.IO) {
         val request = Request.Builder().url(url).build()
@@ -64,7 +106,6 @@ object NetworkUtils {
                 var totalBytes = 0L
                 val buffer = okio.Buffer()
                 
-                // Maximum 2 másodpercig mérjük a gyors teszt érdekében
                 while (System.currentTimeMillis() - startTime < 2000) {
                     val read = source.read(buffer, 8192)
                     if (read == -1L) break
@@ -116,3 +157,4 @@ object NetworkUtils {
         }
     }
 }
+
