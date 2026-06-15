@@ -89,7 +89,7 @@ class MainViewModel @Inject constructor(
                 "speed" -> speedTestUseCase()
                 "ping" -> pingUseCase()
                 "port_scan" -> portScanUseCase()
-                "folder_size" -> getFolderSizeUseCase(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS).absolutePath)
+                "folder_size" -> getFolderSizeUseCase()   // ❗ ITT VOLT A HIBA: paraméter nélkül
                 "battery" -> getBatteryStatusUseCase()
                 "network_state" -> getNetworkStateUseCase()
                 "ram" -> getRamInfoUseCase()
@@ -97,7 +97,7 @@ class MainViewModel @Inject constructor(
                 "device" -> getDeviceInfoUseCase()
                 "brightness" -> getScreenBrightnessUseCase()
                 "cpu" -> getCpuCoreCountUseCase()
-                "apps" -> listInstalledAppsUseCase(0)
+                "apps" -> listInstalledAppsUseCase()      // ❗ ITT VOLT A HIBA: paraméter nélkül
                 "mobile_network" -> getMobileNetworkTypeUseCase()
                 "sensors" -> listSensorsUseCase()
                 "display" -> getDisplayInfoUseCase()
