@@ -1,10 +1,14 @@
 package com.example.allinonetester.domain.usercases
 
 import android.content.Context
-import com.example.allinonetester.utils.DeviceUtils
+import com.example.allinonetester.utils.NetworkUtils
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 
-class GetNetworkStateUseCase(private val context: Context) {
-    suspend operator fun invoke(): String {
-        return DeviceUtils.getNetworkState(context)
+class GetNetworkTypeUseCase @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    operator fun invoke(): String {
+        return NetworkUtils.getDetailedNetworkType(context)
     }
 }
