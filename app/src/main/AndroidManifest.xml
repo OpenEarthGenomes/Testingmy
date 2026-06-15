@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <application
-        android:name=".AllInOneApp"
+        android:name="com.example.allinonetester.utils.AllInOneApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -16,7 +16,7 @@
         android:theme="@style/Theme.AllInOneTester">
         
         <activity
-            android:name=".presentation.ui.MainActivity"
+            android:name="com.example.allinonetester.presentation.ui.viewmodel.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.AllInOneTester">
             <intent-filter>
@@ -27,4 +27,3 @@
     </application>
 
 </manifest>
-
