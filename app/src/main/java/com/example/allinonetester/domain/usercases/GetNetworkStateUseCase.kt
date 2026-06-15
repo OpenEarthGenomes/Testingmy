@@ -5,7 +5,7 @@ import com.example.allinonetester.utils.NetworkUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
-class GetNetworkTypeUseCase @Inject constructor(
+class GetNetworkStateUseCase @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     operator fun invoke(): String {
