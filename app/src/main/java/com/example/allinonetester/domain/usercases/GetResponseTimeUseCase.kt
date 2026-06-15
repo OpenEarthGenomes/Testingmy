@@ -5,8 +5,8 @@ import com.example.allinonetester.utils.NetworkUtils
 class GetResponseTimeUseCase {
     suspend operator fun invoke(url: String = "https://clcoding.com"): String {
         return try {
-            val (status, timeMs) = NetworkUtils.getResponseTime(url)
-            "URL: $url\nStatus: $status | Válaszidő: ${timeMs} ms ⏱️"
+            val timeMs = NetworkUtils.getResponseTime(url)
+            "URL: $url\nVálaszidő: $timeMs ⏱️"
         } catch (e: Exception) {
             "Hiba: ${e.message}"
         }
