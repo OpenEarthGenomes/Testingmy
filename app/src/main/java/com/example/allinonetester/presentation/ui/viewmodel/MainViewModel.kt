@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.allinonetester.domain.usercases.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -23,7 +24,7 @@ data class MainUiState(
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val checkInternetUseCase: CheckInternetUseCase,
     private val dnsLookupUseCase: DnsLookupUseCase,
     private val getPublicIpUseCase: GetPublicIpUseCase,
@@ -89,7 +90,7 @@ class MainViewModel @Inject constructor(
                 "speed" -> speedTestUseCase()
                 "ping" -> pingUseCase()
                 "port_scan" -> portScanUseCase()
-                "folder_size" -> getFolderSizeUseCase()   // ❗ ITT VOLT A HIBA: paraméter nélkül
+                "folder_size" -> getFolderSizeUseCase()
                 "battery" -> getBatteryStatusUseCase()
                 "network_state" -> getNetworkStateUseCase()
                 "ram" -> getRamInfoUseCase()
@@ -97,7 +98,7 @@ class MainViewModel @Inject constructor(
                 "device" -> getDeviceInfoUseCase()
                 "brightness" -> getScreenBrightnessUseCase()
                 "cpu" -> getCpuCoreCountUseCase()
-                "apps" -> listInstalledAppsUseCase()      // ❗ ITT VOLT A HIBA: paraméter nélkül
+                "apps" -> listInstalledAppsUseCase()
                 "mobile_network" -> getMobileNetworkTypeUseCase()
                 "sensors" -> listSensorsUseCase()
                 "display" -> getDisplayInfoUseCase()
