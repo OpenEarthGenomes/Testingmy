@@ -13,9 +13,6 @@ class StorageUtils @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
-    /**
-     * Visszaadja az eszköz belső tárhelyének szabad kapacitását bájtokban.
-     */
     fun getFreeInternalSpace(): Long {
         val path = Environment.getDataDirectory()
         val stat = StatFs(path.path)
@@ -24,9 +21,6 @@ class StorageUtils @Inject constructor(
         return availableBlocks * blockSize
     }
 
-    /**
-     * Visszaadja az eszköz belső tárhelyének teljes kapacitását bájtokban.
-     */
     fun getTotalInternalSpace(): Long {
         val path = Environment.getDataDirectory()
         val stat = StatFs(path.path)
@@ -35,24 +29,20 @@ class StorageUtils @Inject constructor(
         return totalBlocks * blockSize
     }
 
-    /**
-     * Visszaadja az alkalmazás belső gyorsítótárának (cache) mappáját.
-     */
+    fun getStorageInfo(): String {
+        val freeMB = getFreeInternalSpace() / (1024 * 1024)
+        val totalMB = getTotalInternalSpace() / (1024 * 1024)
+        return "💾 Tárhely: $freeMB MB szabad / $totalMB MB összesen"
+    }
+
     fun getAppCacheDirectory(): File {
         return context.cacheDir
     }
 
-    /**
-     * Visszaadja az alkalmazás külső gyorsítótárának mappáját (ha elérhető).
-     */
     fun getAppExternalCacheDirectory(): File? {
         return context.externalCacheDir
     }
 
-    /**
-     * Törli a megadott mappát és annak minden tartalmát rekurzívan.
-     * @return Igaz, ha a törlés sikeres volt, különben hamis.
-     */
     fun deleteDirectoryContents(directory: File): Boolean {
         if (!directory.exists() || !directory.isDirectory) return false
         
