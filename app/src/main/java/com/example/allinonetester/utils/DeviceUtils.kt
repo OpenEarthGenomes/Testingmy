@@ -34,7 +34,6 @@ object DeviceUtils {
         }
     }
 
-    // Biztonságos, összeomlásmentes mobilhálózat-típus lekérdezés
     fun getNetworkState(context: Context): String {
         return try {
             val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -46,7 +45,6 @@ object DeviceUtils {
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
                     val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
                     
-                    // Verziókezelés a sárga hibák ellen és az összeomlás megelőzésére
                     val networkType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         try {
                             tm.dataNetworkType
@@ -77,7 +75,7 @@ object DeviceUtils {
                         
                         TelephonyManager.NETWORK_TYPE_LTE -> "4G (LTE)"
                         TelephonyManager.NETWORK_TYPE_NR -> "5G"
-                        else -> "Mobil adat (Típus korlátozott)"
+                        else -> "Mobil adat (Kapcsolódva)"
                     }
                     "📱 Mobil hálózat: $typeString"
                 }
@@ -102,7 +100,6 @@ object DeviceUtils {
         }
     }
 
-    // Sárga figyelmeztetés javítva verziókezeléssel
     fun getInstalledAppNames(context: Context): List<String> {
         return try {
             val pm = context.packageManager
@@ -126,7 +123,6 @@ object DeviceUtils {
 
     fun getCpuCoreCount(): Int = Runtime.getRuntime().availableProcessors()
 
-    // Sárga figyelmeztetés javítva az új WindowMetrics API használatával
     fun getDisplayInfo(context: Context): String {
         return try {
             val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
